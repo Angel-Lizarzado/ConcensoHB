@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+
+type Params = { params: Promise<{ id: string }> }
+
+// POST /api/incidencias/[id]/comentarios — solo JUEZ/ADMIN (internos)
+export async function POST(req: NextRequest, { params }: Params) {
+  try {
+    const session = await auth()
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!['ADMIN', 'JUEZ'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Solo JUEZ y ADMIN pueden comentar internamente' }, { status: 403 })
+    }
+
+    const { id }      = await params
+    const { contenido } = await req.json()
+    if (!contenido?.trim()) return NextResponse.json({ error: 'Contenido requerido' }, { status: 400 })
+
+    const incidencia = await prisma.incidencia.findUnique({ where: { id } })
+    if (!incidencia) return NextResponse.json({ error: 'Incidencia no encontrada' }, { status: 404 })
+
+    if (session.user.role === 'JUEZ' && incidencia.juezId !== session.user.id) {
+      return NextResponse.json({ error: 'Solo el juez asignado a este caso puede comentar' }, { status: 403 })
+    }
+
+    const comentario = await prisma.comentarioIncidencia.create({
+      data: { incidenciaId: id, autorId: session.user.id, contenido: contenido.trim() },
+      include: { autor: { select: { id: true, username: true, role: true } } },
+    })
+    return NextResponse.json(comentario, { status: 201 })
+  } catch {
+    return NextResponse.json({ error: 'Error al comentar' }, { status: 500 })
+  }
+}

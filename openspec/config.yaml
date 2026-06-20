@@ -1,0 +1,51 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Next.js 14+ App Router, TypeScript, TailwindCSS v4 (@theme only), Prisma + PostgreSQL, NextAuth.js v5 JWT
+  Architecture: Fullstack monorepo (Next.js API Routes), deploy target Vercel
+  Styling: TailwindCSS v4 — NO tailwind.config.js, @theme directive in globals.css only
+  Auth: NextAuth.js v5 with 5 roles (ADMIN, REPORTERO, COMANDANTE, JUEZ, VISITANTE)
+  Testing: Not yet installed (greenfield)
+
+strict_tdd: false
+
+artifact_store: hybrid
+execution_mode: auto
+
+testing:
+  strict_tdd: false
+  test_runner: NOT FOUND
+  layers:
+    unit: { available: false, tool: — }
+    integration: { available: false, tool: — }
+    e2e: { available: false, tool: — }
+  coverage: { available: false, command: — }
+  quality_tools:
+    linter: { available: false, command: — }
+    type_checker: { available: false, command: tsc --noEmit (pending install) }
+    formatter: { available: false, command: — }
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - CRITICAL: TailwindCSS v4 — never use tailwind.config.js, always @theme in globals.css
+    - CRITICAL: Use next/font/google for Cinzel, Crimson Pro, Inter
+    - CRITICAL: Radio player must NOT autoplay; load stream only on play click
+  verify:
+    - Compare implementation against every spec scenario
+    - Verify visual fidelity against HTML reference mockup
+  archive:
+    - Warn before merging destructive deltas (large removals)

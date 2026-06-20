@@ -1,0 +1,341 @@
+// This is your Prisma schema file — v2.0
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum Role {
+  ADMIN
+  REPORTERO
+  COMANDANTE
+  JUEZ
+  VISITANTE
+}
+
+enum RolEjercito {
+  COMANDANTE  // Dueño/líder del ejército
+  OFICIAL     // Oficial de alto rango
+  EMBAJADOR   // Representante registrado
+  SOLDADO     // Miembro regular
+}
+
+enum Departamento {
+  NOTICIAS
+  WIREDS
+  JUZGADO
+  OFICIAL
+}
+
+enum EstadoMediacion {
+  PENDIENTE
+  EN_PROCESO
+  RESUELTO
+  CERRADO
+}
+
+enum EstadoIncidencia {
+  ABIERTA      // Solo JUEZ y ADMIN la ven
+  EN_REVISION  // JUEZ asignado revisando
+  EN_PROCESO   // Denunciado notificado, puede responder
+  RESUELTA
+  DESESTIMADA
+}
+
+// =============================================
+// MODELOS
+// =============================================
+
+model User {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  role         Role          @default(VISITANTE)
+  departamento Departamento? // Solo relevante para REPORTERO
+  rolEjercito  RolEjercito?  // Rol dentro de su ejército (independiente del role global)
+
+  // Ejército al que pertenece
+  ejercitoId   String?
+  ejercito     Ejercito?     @relation("MiembrosEjercito", fields: [ejercitoId], references: [id])
+
+  // Sistema de invitaciones
+  invitadoPorId  String?
+  invitadoPor    User?              @relation("InvitadoPor", fields: [invitadoPorId], references: [id])
+  invitados      User[]             @relation("InvitadoPor")
+  codigoUsadoId  String?
+  codigoUsado    CodigoInvitacion?  @relation("UsuariosInvitados", fields: [codigoUsadoId], references: [id])
+  codigosCreados CodigoInvitacion[] @relation("CodigosCreados")
+
+  // Relaciones de contenido
+  noticias     Noticia[]
+  eventos      Evento[]      @relation("EventosAsistentes")
+  mensajes     MensajeChat[]
+
+  // Relaciones de incidencias
+  incidenciasCreadas    Incidencia[]         @relation("IncidenciasDenunciante")
+  incidenciasComoJuez   Incidencia[]         @relation("IncidenciasJuez")
+  comentariosIncidencia ComentarioIncidencia[]
+
+  createdAt DateTime @default(now())
+
+  @@index([role])
+  @@index([ejercitoId])
+  @@index([invitadoPorId])
+}
+
+model Ejercito {
+  id              String   @id @default(cuid())
+  sigla           String   @unique
+  nombre          String
+  descripcion     String?              // Texto plano — resumen corto
+  descripcionRich String?  @db.Text   // HTML sanitizado de Tiptap — editable por COMANDANTE
+  escudo          String?              // URL de imagen del escudo
+  banner          String?              // URL de imagen banner para la ficha pública
+  fundador        String
+  activo          Boolean  @default(true)
+  ranking         Int?
+  puntos          Int      @default(0)
+
+  // Relaciones
+  miembros         User[]              @relation("MiembrosEjercito")
+  actividades      ActividadEjercito[]
+  codigosInvitacion CodigoInvitacion[]
+  incidenciasDenunciante Incidencia[]  @relation("IncidenciasDenunciante")
+  incidenciasDenunciado  Incidencia[]  @relation("IncidenciasDenunciado")
+
+  createdAt DateTime @default(now())
+
+  @@index([activo])
+  @@index([puntos])
+}
+
+model CodigoInvitacion {
+  id           String    @id @default(cuid())
+  codigo       String    @unique  // Ej: "CGE-FAM-X7K2"
+  creadoPorId  String
+  creadoPor    User      @relation("CodigosCreados", fields: [creadoPorId], references: [id])
+  ejercitoId   String?   // Si es para un ejército específico
+  ejercito     Ejercito? @relation(fields: [ejercitoId], references: [id])
+  usoMaximo    Int       @default(1)
+  usosActuales Int       @default(0)
+  activo       Boolean   @default(true)
+  expiresAt    DateTime?
+  usuarios     User[]    @relation("UsuariosInvitados")
+  createdAt    DateTime  @default(now())
+
+  @@index([codigo])
+  @@index([ejercitoId])
+}
+
+model Noticia {
+  id           String       @id @default(cuid())
+  titulo       String
+  slug         String       @unique
+  extracto     String
+  contenido    String       @db.Text
+  imagenUrl    String?      // URL externa
+  imagenKey    String?      // Clave en storage provider
+  departamento Departamento
+  destacada    Boolean      @default(false)
+  publicada    Boolean      @default(false)
+  autor        User         @relation(fields: [autorId], references: [id])
+  autorId      String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([publicada, createdAt])
+  @@index([departamento, publicada])
+  @@index([destacada, publicada])
+  @@index([slug])
+}
+
+model Evento {
+  id          String              @id @default(cuid())
+  nombre      String
+  slug        String              @unique
+  descripcion String
+  fecha       DateTime
+  tipo        String
+  puntos      Int                 @default(0)
+  asistentes  User[]              @relation("EventosAsistentes")
+  actividades ActividadEjercito[]
+  createdAt   DateTime            @default(now())
+
+  @@index([fecha])
+}
+
+model ActividadEjercito {
+  id            String   @id @default(cuid())
+  ejercitoId    String
+  ejercito      Ejercito @relation(fields: [ejercitoId], references: [id])
+  eventoId      String?
+  evento        Evento?  @relation(fields: [eventoId], references: [id])
+  descripcion   String
+  puntos        Int      // Positivo o negativo
+  registradoPor String   // userId del admin
+  createdAt     DateTime @default(now())
+
+  @@index([ejercitoId])
+  @@index([eventoId])
+}
+
+model Mediacion {
+  id          String          @id @default(cuid())
+  solicitante String
+  ejercito1   String
+  ejercito2   String
+  descripcion String          @db.Text
+  estado      EstadoMediacion @default(PENDIENTE)
+  resolucion  String?         @db.Text
+  juezId      String?
+  noticiaId   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([estado])
+  @@index([juezId])
+}
+
+// =============================================
+// INCIDENCIAS
+// =============================================
+
+model Incidencia {
+  id                     String           @id @default(cuid())
+  titulo                 String
+  descripcion            String           @db.Text
+  estado                 EstadoIncidencia @default(ABIERTA)
+
+  denuncianteId          String
+  denunciante            User             @relation("IncidenciasDenunciante", fields: [denuncianteId], references: [id])
+  ejercitoDenuncianteId  String
+  ejercitoDenunciante    Ejercito         @relation("IncidenciasDenunciante", fields: [ejercitoDenuncianteId], references: [id])
+  ejercitoDenunciadoId   String
+  ejercitoDenunciado     Ejercito         @relation("IncidenciasDenunciado", fields: [ejercitoDenunciadoId], references: [id])
+
+  miembrosMencionados    String[]         // userIds de miembros mencionados
+
+  pruebas                PruebaIncidencia[]
+  comentariosInternos    ComentarioIncidencia[]
+
+  juezId                 String?
+  juez                   User?            @relation("IncidenciasJuez", fields: [juezId], references: [id])
+  resolucion             String?          @db.Text
+  fechaJuicio            DateTime?
+  noticiaId              String?          // Noticia JUZGADO auto-generada
+
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([estado])
+  @@index([denuncianteId])
+  @@index([ejercitoDenunciadoId])
+  @@index([juezId])
+}
+
+model PruebaIncidencia {
+  id           String     @id @default(cuid())
+  incidenciaId String
+  incidencia   Incidencia @relation(fields: [incidenciaId], references: [id])
+  tipo         String     // "imagen", "url", "texto"
+  valor        String     @db.Text
+  descripcion  String?
+  subidoPor    String     // userId
+  createdAt    DateTime   @default(now())
+
+  @@index([incidenciaId])
+}
+
+model ComentarioIncidencia {
+  id           String     @id @default(cuid())
+  incidenciaId String
+  incidencia   Incidencia @relation(fields: [incidenciaId], references: [id])
+  autorId      String
+  autor        User       @relation(fields: [autorId], references: [id])
+  contenido    String     @db.Text
+  createdAt    DateTime   @default(now())
+
+  @@index([incidenciaId])
+}
+
+// =============================================
+// CHAT
+// =============================================
+
+model CanalChat {
+  id              String        @id @default(cuid())
+  nombre          String        @unique
+  descripcion     String?
+  privado         Boolean       @default(false)
+  rolesPermitidos Role[]        // vacío = todos los autenticados
+  mensajes        MensajeChat[]
+  creadoPor       String        // userId del admin
+  createdAt       DateTime      @default(now())
+
+  @@index([nombre])
+}
+
+model MensajeChat {
+  id        String    @id @default(cuid())
+  contenido String    @db.Text
+  fijado    Boolean   @default(false)
+  eliminado Boolean   @default(false) // Soft delete — permite auditoría
+  editadoAt DateTime?
+  autorId   String
+  autor     User      @relation(fields: [autorId], references: [id])
+  canalId   String
+  canal     CanalChat @relation(fields: [canalId], references: [id])
+  createdAt DateTime  @default(now())
+
+  @@index([canalId, createdAt])
+  @@index([autorId])
+  @@index([fijado])
+}
+
+// =============================================
+// CONFIGURACIÓN
+// =============================================
+
+model RadioConfig {
+  id           String   @id @default(cuid())
+  enabled      Boolean  @default(false)
+  streamUrl    String   @default("")
+  radioName    String   @default("CGE Radio")
+  djName       String   @default("DJ")
+  djAvatarUrl  String   @default("")
+  currentTrack String   @default("En vivo")
+  updatedAt    DateTime @updatedAt
+}
+
+model SiteConfig {
+  id              String   @id @default(cuid())
+  siteName        String   @default("Concilio General de Ejércitos")
+  siteSubtitle    String   @default("Organismo Conciliador · Habbo.es")
+  siteSlogan      String   @default("⚔ UNIDAD · HONOR · ORDEN ⚔")
+  siteDescription String   @default("Organismo independiente y neutral de los ejércitos de Habbo en habla hispana.")
+  logoSvg         String?  @db.Text
+  faviconUrl      String?
+  metaKeywords    String   @default("habbo, ejércitos, concilio, hispano")
+  footerText      String   @default("Organismo independiente, neutral y conciliador de la comunidad de ejércitos de Habbo. Fundado en 2026.")
+  foundedYear     Int      @default(2026)
+  primaryColor    String   @default("#C9A84C")
+  // Colores de departamento — runtime override vía CSS vars
+  colorNoticias   String   @default("#d46b8a")
+  colorWireds     String   @default("#5bb8d4")
+  colorJuzgado    String   @default("#C9A84C")
+  colorOficial    String   @default("#7A5C18")
+  // Control de registro
+  registroAbierto         Boolean @default(false)
+  maxEmbajadoresPorCodigo Int     @default(1)
+  updatedAt       DateTime @updatedAt
+}

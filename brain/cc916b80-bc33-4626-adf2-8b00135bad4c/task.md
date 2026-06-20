@@ -1,0 +1,10 @@
+- `[/]` Modificar `schema.prisma` agregando `fechaJuicio DateTime?` a la tabla `Incidencia`.
+- `[ ]` Ejecutar sincronización de Prisma (`npx prisma db push` o script para generar cliente).
+- `[ ]` Actualizar `app/api/incidencias/[id]/tomar/route.ts` para asignar el Juez y cambiar a `EN_REVISION`.
+- `[ ]` Actualizar `app/api/incidencias/[id]/soltar/route.ts` para quitar el Juez y devolver a `ABIERTA`.
+- `[ ]` Actualizar `app/api/incidencias/[id]/programar/route.ts` para fijar `fechaJuicio` y cambiar a `EN_PROCESO`.
+- `[ ]` Modificar `AdminIncidencias.tsx` (Panel de Jueces) para mostrar pestañas: Solicitudes, Mis Casos.
+- `[ ]` En `AdminIncidencias.tsx`, agregar UI para Tomar, Soltar, y Programar Juicio.
+- `[ ]` Crear vista pública de calendario (`app/(public)/calendario/page.tsx`).
+- `[ ]` Crear vista de calendario en el Dashboard (`app/dashboard/calendario/page.tsx` o módulo para Admins).
+- `[ ]` Implementar componente de Calendario visual que soporte filtros y eventos anónimos para juicios si el usuario está logueado.
