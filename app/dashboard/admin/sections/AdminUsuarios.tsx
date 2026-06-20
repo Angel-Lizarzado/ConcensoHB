@@ -38,7 +38,12 @@ export default function AdminUsuarios() {
     await fetch('/api/usuarios', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: editId, ...editData }),
+      body: JSON.stringify({
+        userId: editId,
+        role: editData.role,
+        departamento: editData.departamento === '' ? null : editData.departamento,
+        rolEjercito: editData.rolEjercito === '' ? null : editData.rolEjercito,
+      }),
     })
     setEditId(null)
     load()

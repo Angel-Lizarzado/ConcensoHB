@@ -117,8 +117,9 @@ export default async function HomePage() {
             fontFamily: 'var(--font-display)', fontSize: 'clamp(0.75rem, 0.6rem + 0.7vw, 1rem)',
             fontWeight: 400, letterSpacing: '0.3em', textTransform: 'uppercase',
             color: 'var(--color-text-muted)', marginBottom: 'var(--space-6)',
+            marginRight: '-0.3em',
           }}>
-            ⚔ &nbsp; Unidad &nbsp;·&nbsp; Honor &nbsp;·&nbsp; Orden &nbsp; ⚔
+            ⚔ &nbsp;Unidad&nbsp; · &nbsp;Honor&nbsp; · &nbsp;Orden&nbsp; ⚔
           </p>
 
           <p style={{
