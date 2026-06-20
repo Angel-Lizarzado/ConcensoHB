@@ -17,10 +17,21 @@ interface RankingWidgetProps {
   ejercitos: EjercitoRanking[]
 }
 
-const MEDAL_STYLES: Record<number, { color: string; label: string }> = {
-  1: { color: 'var(--color-gold)',        label: 'I'   },
-  2: { color: '#9aa4ae',                  label: 'II'  },
-  3: { color: '#a07848',                  label: 'III' },
+const MEDAL_STYLES: Record<number, { color: string }> = {
+  1: { color: 'var(--color-gold)' },
+  2: { color: '#9aa4ae' },
+  3: { color: '#a07848' },
+}
+
+function toRoman(num: number): string {
+  const roman: Record<string, number> = { M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1 }
+  let str = ''
+  for (const i of Object.keys(roman)) {
+    const q = Math.floor(num / roman[i])
+    num -= q * roman[i]
+    str += i.repeat(q)
+  }
+  return str
 }
 
 export default function RankingWidget({ ejercitos }: RankingWidgetProps) {
@@ -62,7 +73,7 @@ export default function RankingWidget({ ejercitos }: RankingWidgetProps) {
                   textAlign: 'center',
                   color: medal?.color ?? 'var(--color-text-faint)',
                 }}>
-                  {medal?.label ?? pos}
+                  {toRoman(pos)}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                   <div style={{
