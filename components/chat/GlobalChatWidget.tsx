@@ -157,6 +157,20 @@ export default function GlobalChatWidget() {
         body: JSON.stringify({ contenido: text })
       })
       if (!res.ok) throw new Error('Failed')
+      
+      const newMsg = await res.json()
+      
+      // Añadir directamente al estado local para no depender del SSE en Vercel Serverless
+      setMensajes(prev => {
+        const current = prev[activeTab] || []
+        if (current.some(m => m.id === newMsg.id)) return prev
+        return { ...prev, [activeTab]: [...current, newMsg] }
+      })
+
+      // Scrollear al fondo
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
     } catch {
       // Si falla, podríamos mostrar un error o restaurar el input
       alert('Error al enviar el mensaje')
