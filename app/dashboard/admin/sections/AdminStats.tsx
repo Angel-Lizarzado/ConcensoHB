@@ -16,20 +16,32 @@ export default function AdminStats() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // En producción con DB, estos vendrán de /api/admin/stats
-    // Por ahora usamos endpoints existentes para componer
+    const safeFetch = (url: string) =>
+      fetch(url)
+        .then(async r => {
+          if (!r.ok) {
+            console.error(`Error fetching ${url}:`, r.status);
+            return { data: [], meta: { total: 0 } };
+          }
+          return r.json().catch(() => ({ data: [], meta: { total: 0 } }));
+        })
+        .catch(err => {
+          console.error(`Network error for ${url}:`, err);
+          return { data: [], meta: { total: 0 } };
+        });
+
     Promise.all([
-      fetch('/api/ejercitos').then(r => r.json()),
-      fetch('/api/noticias?limit=1').then(r => r.json()),
-      fetch('/api/mediaciones').then(r => r.json()),
-    ]).then(([ejs, nots, meds]) => {
+      safeFetch('/api/ejercitos'),
+      safeFetch('/api/noticias?limit=1'),
+      safeFetch('/api/incidencias'), // Usando incidencias que es lo nuevo
+    ]).then(([ejs, nots, incs]) => {
       setStats({
         ejercitos:             ejs.data?.length   ?? 0,
         usuarios:              0,
         noticias:              nots.meta?.total   ?? 0,
-        mediaciones:           meds.data?.length  ?? 0,
-        mediacionesPendientes: meds.data?.filter((m: any) => m.estado === 'PENDIENTE').length ?? 0,
-        incidencias:           0,
+        mediaciones:           incs.data?.length  ?? 0, // mapeamos incidencias a "mediaciones"
+        mediacionesPendientes: incs.data?.filter((m: any) => m.estado === 'PENDIENTE' || m.estado === 'EN_REVISION').length ?? 0,
+        incidencias:           incs.data?.length  ?? 0,
       })
     }).finally(() => setLoading(false))
   }, [])
