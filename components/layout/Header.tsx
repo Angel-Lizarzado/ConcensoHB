@@ -386,7 +386,7 @@ export default function Header({
           {/* Acciones derecha */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexShrink: 0, marginLeft: 'auto' }}>
             {isAuthenticated && session?.user ? (
-              <UserMenu username={(session.user as any).username ?? session.user.name ?? 'Usuario'} />
+              <UserMenu username={(session.user as any).username ?? (session.user as any).name ?? 'Usuario'} />
             ) : (
               <>
                 <Link href="/login" style={{

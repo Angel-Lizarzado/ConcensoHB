@@ -246,7 +246,7 @@ export default function GlobalChatWidget() {
                 yesterday.setDate(yesterday.getDate() - 1)
 
                 return uniqueMsgs.map(msg => {
-                  const isMe = msg.autor.username === session?.user?.name
+                  const isMe = msg.autor.username === (session?.user as any)?.username
                   const msgDate = new Date(msg.createdAt)
                   
                   let dateStr = msgDate.toLocaleDateString()
