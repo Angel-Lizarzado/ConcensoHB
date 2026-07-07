@@ -23,10 +23,8 @@ enum Role {
 }
 
 enum RolEjercito {
-  COMANDANTE  // Dueño/líder del ejército
-  OFICIAL     // Oficial de alto rango
-  EMBAJADOR   // Representante registrado
-  SOLDADO     // Miembro regular
+  COMANDANTE  // Líder máximo
+  EMBAJADOR   // Representante ante el Concilio
 }
 
 enum Departamento {
@@ -51,6 +49,13 @@ enum EstadoIncidencia {
   DESESTIMADA
 }
 
+enum VisibilidadEvento {
+  PUBLICO
+  PRIVADO
+  EJERCITO
+  ADMIN
+}
+
 // =============================================
 // MODELOS
 // =============================================
@@ -58,11 +63,12 @@ enum EstadoIncidencia {
 model User {
   id           String        @id @default(cuid())
   username     String        @unique
-  email        String        @unique
   password     String
   role         Role          @default(VISITANTE)
   departamento Departamento? // Solo relevante para REPORTERO
   rolEjercito  RolEjercito?  // Rol dentro de su ejército (independiente del role global)
+  mision       String?
+  biografia    String?       @db.Text
 
   // Ejército al que pertenece
   ejercitoId   String?
@@ -112,6 +118,7 @@ model Ejercito {
   codigosInvitacion CodigoInvitacion[]
   incidenciasDenunciante Incidencia[]  @relation("IncidenciasDenunciante")
   incidenciasDenunciado  Incidencia[]  @relation("IncidenciasDenunciado")
+  eventosVisibles  Evento[]            @relation("EventosVisibilidad")
 
   createdAt DateTime @default(now())
 
@@ -126,6 +133,7 @@ model CodigoInvitacion {
   creadoPor    User      @relation("CodigosCreados", fields: [creadoPorId], references: [id])
   ejercitoId   String?   // Si es para un ejército específico
   ejercito     Ejercito? @relation(fields: [ejercitoId], references: [id])
+  rolOtorgado  Role?     // Rol que otorga este código (ej: JUEZ, REPORTERO). Si es null, otorga VISITANTE.
   usoMaximo    Int       @default(1)
   usosActuales Int       @default(0)
   activo       Boolean   @default(true)
@@ -167,11 +175,15 @@ model Evento {
   fecha       DateTime
   tipo        String
   puntos      Int                 @default(0)
+  visibilidad VisibilidadEvento   @default(PUBLICO)
+  ejercitoVisibilidadId String?
+  ejercitoVisibilidad   Ejercito? @relation("EventosVisibilidad", fields: [ejercitoVisibilidadId], references: [id])
   asistentes  User[]              @relation("EventosAsistentes")
   actividades ActividadEjercito[]
   createdAt   DateTime            @default(now())
 
   @@index([fecha])
+  @@index([visibilidad])
 }
 
 model ActividadEjercito {

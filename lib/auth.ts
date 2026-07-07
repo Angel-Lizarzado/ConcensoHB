@@ -13,35 +13,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
-        const username = credentials?.username as string | undefined
+        console.log('AUTHORIZE CALLED with:', credentials?.username)
+        const rawUsername = credentials?.username as string | undefined
         const password = credentials?.password as string | undefined
+        const username = rawUsername?.trim()
 
-        if (!username || !password) return null
+        if (!username || !password) {
+          console.log('Missing username or password')
+          return null
+        }
 
-        const user = await prisma.user.findUnique({
-          where: { username },
-          select: {
-            id:         true,
-            username:   true,
-            email:      true,
-            password:   true,
-            role:       true,
-            ejercitoId: true,
-          },
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { username },
+            select: {
+              id:         true,
+              username:   true,
+              password:   true,
+              role:       true,
+              ejercitoId: true,
+            },
+          })
 
-        if (!user) return null
+          if (!user) {
+            console.log('User not found in DB')
+            return null
+          }
 
-        const passwordValid = await bcrypt.compare(password, user.password)
-        if (!passwordValid) return null
+          const passwordValid = await bcrypt.compare(password, user.password)
+          if (!passwordValid) {
+            console.log('Password invalid')
+            return null
+          }
 
-        return {
-          id:         user.id,
-          name:       user.username,
-          email:      user.email,
-          username:   user.username,
-          role:       user.role as Role,
-          ejercitoId: user.ejercitoId ?? undefined,
+          console.log('Authorize SUCCESS for user:', user.username)
+          return {
+            id:         user.id,
+            name:       user.username,
+            username:   user.username,
+            role:       user.role as Role,
+            ejercitoId: user.ejercitoId ?? undefined,
+          }
+        } catch (e) {
+          console.error('AUTHORIZE EXCEPTION:', e)
+          return null
         }
       },
     }),

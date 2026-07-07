@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { ejercitoId, usoMaximo, expiresAt } = body
+    const { ejercitoId, usoMaximo, expiresAt, rolOtorgado } = body
 
     // COMANDANTE solo puede crear códigos para su propio ejército
     const targetEjercitoId = role === 'COMANDANTE'
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         ejercitoId:  targetEjercitoId,
         usoMaximo:   usoMaximo ?? limite,
         expiresAt:   expiresAt ? new Date(expiresAt) : null,
+        rolOtorgado: role === 'ADMIN' ? rolOtorgado : null,
       },
     })
 

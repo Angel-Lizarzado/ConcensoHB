@@ -43,9 +43,7 @@ export default async function EjercitoPage({ params }: Props) {
 
   const ROL_LABEL: Record<string, string> = {
     COMANDANTE: 'Comandante',
-    OFICIAL:    'Oficial',
     EMBAJADOR:  'Embajador',
-    SOLDADO:    'Soldado',
   }
 
   return (

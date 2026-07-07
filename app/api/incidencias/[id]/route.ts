@@ -20,7 +20,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         denunciante: { select: { username: true } },
         juez: { select: { username: true } },
         // Traer pruebas, y hacer un join manual del ejercito del subidor
-        pruebas: { orderBy: { createdAt: 'asc' } }
+        pruebas: { orderBy: { createdAt: 'asc' } },
+        comentarios: { orderBy: { createdAt: 'asc' }, include: { autor: { select: { id: true, username: true, role: true, ejercitoId: true } } } }
       }
     })
 

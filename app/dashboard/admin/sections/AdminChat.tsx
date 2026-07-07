@@ -31,20 +31,27 @@ export default function AdminChat() {
     e.preventDefault()
     setSaving(true)
     setError(null)
-    const res = await fetch('/api/chat/canales', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    })
     
-    if (!res.ok) {
-      const err = await res.json()
-      setError(err.error || 'Error al crear canal')
-    } else {
-      setForm({ nombre: '', descripcion: '', privado: false, rolesPermitidos: [] })
-      fetchCanales()
+    try {
+      const res = await fetch('/api/chat/canales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
+      
+      if (!res.ok) {
+        let err;
+        try { err = await res.json() } catch { err = {} }
+        setError(err.error || 'Error al crear canal')
+      } else {
+        setForm({ nombre: '', descripcion: '', privado: false, rolesPermitidos: [] })
+        fetchCanales()
+      }
+    } catch (error) {
+      setError('Error de conexión al servidor')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const handleDelete = async (id: string, nombre: string) => {
@@ -127,7 +134,7 @@ export default function AdminChat() {
             {form.privado && (
               <div className="flex flex-col gap-2 p-3 bg-surface rounded-sm">
                 <label className="font-ui text-xs font-medium tracking-widest uppercase text-text-muted">Roles permitidos</label>
-                {['ADMIN', 'JUEZ', 'COMANDANTE', 'OFICIAL', 'EMBAJADOR', 'REPORTERO'].map(r => (
+                {['ADMIN', 'JUEZ', 'COMANDANTE', 'REPORTERO', 'VISITANTE'].map(r => (
                   <label key={r} className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={form.rolesPermitidos.includes(r)} onChange={() => toggleRole(r)} />
                     <span className="font-ui text-xs text-text">{r}</span>

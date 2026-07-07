@@ -186,8 +186,23 @@ export default function DashboardLayout({ children, username, role }: DashboardL
           </div>
         </nav>
 
-        {/* Logout */}
-        <div style={{ padding: 'var(--space-4) var(--space-3)', borderTop: '1px solid var(--color-border)' }}>
+        {/* Mi Perfil & Logout */}
+        <div style={{ padding: 'var(--space-4) var(--space-3)', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Link
+            href="/dashboard/perfil"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              padding: 'var(--space-3) var(--space-3)', borderRadius: 'var(--radius-md)',
+              fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)',
+              color: pathname === '/dashboard/perfil' ? 'var(--color-gold)' : 'var(--color-text-faint)',
+              background: pathname === '/dashboard/perfil' ? 'var(--color-gold-highlight)' : 'transparent',
+              textDecoration: 'none', transition: 'all var(--transition)',
+            }}
+          >
+            <IconUsers />
+            Mi Perfil
+          </Link>
+
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
             style={{

@@ -6,10 +6,10 @@ import bcrypt from 'bcryptjs'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { username, email, password, codigo } = body
+    const { username, password, codigo } = body
 
-    if (!username || !email || !password) {
-      return NextResponse.json({ error: 'username, email y password son requeridos' }, { status: 400 })
+    if (!username || !password) {
+      return NextResponse.json({ error: 'Username y password son requeridos' }, { status: 400 })
     }
     if (password.length < 8) {
       return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
@@ -44,13 +44,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar que el usuario no exista
-    const [existeUsername, existeEmail] = await Promise.all([
-      prisma.user.findUnique({ where: { username } }),
-      prisma.user.findUnique({ where: { email } }),
-    ])
-
+    const existeUsername = await prisma.user.findUnique({ where: { username } })
     if (existeUsername) return NextResponse.json({ error: 'Ese nombre de usuario ya está en uso' }, { status: 409 })
-    if (existeEmail)    return NextResponse.json({ error: 'Ese email ya está registrado' }, { status: 409 })
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
@@ -59,14 +54,13 @@ export async function POST(req: NextRequest) {
       const newUser = await tx.user.create({
         data: {
           username,
-          email,
           password:     hashedPassword,
-          role:         'VISITANTE',
+          role:         invitacion?.rolOtorgado ?? 'VISITANTE',
           ejercitoId:   invitacion?.ejercitoId ?? null,
           invitadoPorId: invitacion?.creadoPorId ?? null,
           codigoUsadoId: invitacion?.id ?? null,
         },
-        select: { id: true, username: true, email: true, role: true },
+        select: { id: true, username: true, role: true },
       })
 
       if (invitacion) {

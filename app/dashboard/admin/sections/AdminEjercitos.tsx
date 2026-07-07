@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react'
 
 interface Ejercito {
   id: string; sigla: string; nombre: string; activo: boolean; puntos: number
+  fundador: string
   _count: { miembros: number }
 }
 
 export default function AdminEjercitos() {
   const [ejercitos, setEjercitos] = useState<Ejercito[]>([])
   const [loading, setLoading]     = useState(true)
-  const [form, setForm] = useState({ sigla: '', nombre: '', fundador: '', descripcion: '' })
   const [saving, setSaving]       = useState(false)
-  const [msg, setMsg]             = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -25,6 +24,7 @@ export default function AdminEjercitos() {
   useEffect(load, [])
 
   const toggleActivo = async (id: string, activo: boolean, sigla: string) => {
+    setSaving(true)
     const slug = sigla.toLowerCase().replace(/\./g, '')
     await fetch(`/api/ejercitos/${slug}`, {
       method: 'PATCH',
@@ -32,85 +32,75 @@ export default function AdminEjercitos() {
       body: JSON.stringify({ activo: !activo }),
     })
     load()
-  }
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setMsg(null)
-    const res = await fetch('/api/ejercitos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    if (res.ok) { setMsg('Ejército creado'); setForm({ sigla: '', nombre: '', fundador: '', descripcion: '' }); load() }
-    else { const d = await res.json(); setMsg(d.error) }
     setSaving(false)
   }
 
+  const handleDeny = async (id: string, sigla: string) => {
+    if (!confirm(`¿Estás seguro de denegar y ELIMINAR el ejército ${sigla}?`)) return
+    setSaving(true)
+    const slug = sigla.toLowerCase().replace(/\./g, '')
+    await fetch(`/api/ejercitos/${slug}`, { method: 'DELETE' })
+    load()
+    setSaving(false)
+  }
+
+  const pendientes = ejercitos.filter(e => !e.activo)
+  const registrados = ejercitos.filter(e => e.activo)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Crear ejército */}
+      {/* Solicitudes Pendientes */}
       <section>
-        <h2 style={sectionTitle}>Nuevo Ejército</h2>
-        <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', maxWidth: 600 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <label style={labelStyle}>Sigla</label>
-            <input className="input-gold" value={form.sigla} onChange={e => setForm(p => ({ ...p, sigla: e.target.value }))} placeholder="F.A.M" required />
+        <h2 style={sectionTitle}>Solicitudes Pendientes / Suspendidos</h2>
+        {loading ? <p style={muted}>Cargando…</p> : pendientes.length === 0 ? <p style={muted}>No hay solicitudes pendientes.</p> : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
+            {pendientes.map(e => (
+              <div key={e.id} style={{ background: 'var(--color-surface-offset)', border: '1px solid var(--color-border-gold)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-gold)', textTransform: 'uppercase' }}>{e.nombre}</h3>
+                  <p style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', letterSpacing: '0.1em' }}>SIGLA: {e.sigla}</p>
+                </div>
+                <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                  Fundador: <strong style={{ color: 'var(--color-text)' }}>{e.fundador}</strong>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'auto' }}>
+                  <button onClick={() => toggleActivo(e.id, e.activo, e.sigla)} disabled={saving} style={{ flex: 1, padding: 'var(--space-2)', background: '#4a8a3a', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 700, opacity: saving ? 0.6 : 1 }}>
+                    ✅ Aprobar
+                  </button>
+                  <button onClick={() => handleDeny(e.id, e.sigla)} disabled={saving} style={{ flex: 1, padding: 'var(--space-2)', background: 'var(--color-onair)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 700, opacity: saving ? 0.6 : 1 }}>
+                    ❌ Denegar
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <label style={labelStyle}>Nombre</label>
-            <input className="input-gold" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} placeholder="Fuerza Armada Mexicana" required />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <label style={labelStyle}>Fundador</label>
-            <input className="input-gold" value={form.fundador} onChange={e => setForm(p => ({ ...p, fundador: e.target.value }))} placeholder="Username del fundador" required />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <label style={labelStyle}>Descripción</label>
-            <input className="input-gold" value={form.descripcion} onChange={e => setForm(p => ({ ...p, descripcion: e.target.value }))} placeholder="Breve descripción" />
-          </div>
-          <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-            <button type="submit" className="btn-primary" disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Creando…' : 'Crear Ejército'}
-            </button>
-            {msg && <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-gold)' }}>{msg}</span>}
-          </div>
-        </form>
+        )}
       </section>
 
       {/* Lista */}
       <section>
-        <h2 style={sectionTitle}>Ejércitos Registrados</h2>
+        <h2 style={sectionTitle}>Ejércitos Registrados (Activos)</h2>
         {loading ? <p style={muted}>Cargando…</p> : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--color-border-gold)' }}>
-                  {['Sigla', 'Nombre', 'Miembros', 'Puntos', 'Estado', 'Acción'].map(h => (
+                  {['Sigla', 'Nombre', 'Fundador', 'Miembros', 'Puntos', 'Acción'].map(h => (
                     <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', color: 'var(--color-gold)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {ejercitos.map(e => (
+                {registrados.map(e => (
                   <tr key={e.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={td}><span style={{ color: 'var(--color-gold)', fontWeight: 700, fontFamily: 'var(--font-display)' }}>{e.sigla}</span></td>
                     <td style={td}>{e.nombre}</td>
+                    <td style={td}>{e.fundador}</td>
                     <td style={td}>{e._count.miembros}</td>
                     <td style={td}>{e.puntos.toLocaleString()}</td>
                     <td style={td}>
-                      <span style={{ color: e.activo ? '#4a8a3a' : 'var(--color-text-faint)', fontWeight: 600 }}>
-                        {e.activo ? 'Activo' : 'Suspendido'}
-                      </span>
-                    </td>
-                    <td style={td}>
-                      <button
-                        onClick={() => toggleActivo(e.id, e.activo, e.sigla)}
-                        className="btn-secondary"
-                        style={{ fontSize: 10, padding: 'var(--space-1) var(--space-3)' }}
-                      >
-                        {e.activo ? 'Suspender' : 'Activar'}
+                      <button onClick={() => toggleActivo(e.id, e.activo, e.sigla)} disabled={saving} className="btn-secondary" style={{ fontSize: 10, padding: 'var(--space-1) var(--space-3)', opacity: saving ? 0.6 : 1 }}>
+                        Suspender
                       </button>
                     </td>
                   </tr>
@@ -125,6 +115,5 @@ export default function AdminEjercitos() {
 }
 
 const sectionTitle: React.CSSProperties = { fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-gold-bright)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 'var(--space-6)' }
-const labelStyle: React.CSSProperties   = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }
 const muted: React.CSSProperties        = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }
 const td: React.CSSProperties           = { padding: 'var(--space-3) var(--space-4)', color: 'var(--color-text-muted)', verticalAlign: 'middle' }

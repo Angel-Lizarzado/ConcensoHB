@@ -9,10 +9,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
     const session = await auth()
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    if (!['ADMIN', 'JUEZ'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Solo JUEZ y ADMIN pueden comentar internamente' }, { status: 403 })
-    }
-
     const { id }      = await params
     const { contenido } = await req.json()
     if (!contenido?.trim()) return NextResponse.json({ error: 'Contenido requerido' }, { status: 400 })
@@ -20,8 +16,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     const incidencia = await prisma.incidencia.findUnique({ where: { id } })
     if (!incidencia) return NextResponse.json({ error: 'Incidencia no encontrada' }, { status: 404 })
 
-    if (session.user.role === 'JUEZ' && incidencia.juezId !== session.user.id) {
-      return NextResponse.json({ error: 'Solo el juez asignado a este caso puede comentar' }, { status: 403 })
+    const role = session.user.role
+    const ejercitoId = session.user.ejercitoId
+    
+    if (role === 'COMANDANTE') {
+      if (incidencia.ejercitoDenuncianteId !== ejercitoId && incidencia.ejercitoDenunciadoId !== ejercitoId) {
+        return NextResponse.json({ error: 'No participas en este caso' }, { status: 403 })
+      }
+    } else if (role === 'JUEZ' && incidencia.juezAsignadoId !== session.user.id) {
+      return NextResponse.json({ error: 'Solo el juez asignado puede comentar' }, { status: 403 })
     }
 
     const comentario = await prisma.comentarioIncidencia.create({

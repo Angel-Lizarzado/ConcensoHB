@@ -8,10 +8,10 @@ import ComandanteIncidencias from './sections/ComandanteIncidencias'
 
 const TiptapEditor = dynamic(() => import('../reportero/TiptapEditor'), { ssr: false, loading: () => <div style={{ padding: 'var(--space-8)', color: 'var(--color-text-faint)', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)' }}>Cargando editor…</div> })
 
-const ROL_LABEL: Record<string, string> = { COMANDANTE: 'Comandante', OFICIAL: 'Oficial', EMBAJADOR: 'Embajador', SOLDADO: 'Soldado' }
-const ROLES_E = ['COMANDANTE', 'OFICIAL', 'EMBAJADOR', 'SOLDADO']
+const ROL_LABEL: Record<string, string> = { COMANDANTE: 'Comandante', EMBAJADOR: 'Embajador' }
+const ROLES_E = ['COMANDANTE', 'EMBAJADOR']
 
-interface Miembro { id: string; username: string; rolEjercito: string | null; email: string }
+interface Miembro { id: string; username: string; rolEjercito: string | null }
 interface Ejercito {
   id: string; sigla: string; nombre: string; descripcion: string | null
   descripcionRich: string | null; escudo: string | null; banner: string | null
@@ -20,9 +20,9 @@ interface Ejercito {
   actividades: { id: string; descripcion: string; puntos: number; createdAt: string }[]
 }
 
-interface Props { username: string; ejercito: Ejercito | null; rankingActual: number | null }
+interface Props { userId: string; username: string; ejercito: Ejercito | null; rankingActual: number | null }
 
-export default function ComandanteDashboardClient({ username, ejercito, rankingActual }: Props) {
+export default function ComandanteDashboardClient({ userId, username, ejercito, rankingActual }: Props) {
   const searchParams = useSearchParams()
   const router       = useRouter()
   const tab          = (searchParams.get('tab') as 'ficha' | 'miembros' | 'editar' | 'incidencias') ?? 'ficha'
@@ -65,6 +65,21 @@ export default function ComandanteDashboardClient({ username, ejercito, rankingA
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, rolEjercito }),
     })
+  }
+
+  const resetPassword = async (userId: string) => {
+    if (!confirm('¿Estás seguro de resetear la contraseña de este usuario? Se generará una nueva y deberás entregársela.')) return
+    try {
+      const res = await fetch(`/api/usuarios/${userId}/reset`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        alert(`La nueva contraseña es: ${data.newPassword}\n\nCópiala y envíasela al usuario.`)
+      } else {
+        alert(data.error || 'Error al resetear contraseña')
+      }
+    } catch {
+      alert('Error de conexión')
+    }
   }
 
   return (
@@ -135,17 +150,26 @@ export default function ComandanteDashboardClient({ username, ejercito, rankingA
                   <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text)' }}>
                     {m.username} {m.rolEjercito && <span style={{ color: 'var(--color-gold)', fontWeight: 400, fontSize: 'var(--text-xs)' }}>— {ROL_LABEL[m.rolEjercito]}</span>}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>{m.email}</div>
                 </div>
-                <select
-                  value={rolEdit[m.id] ?? m.rolEjercito ?? ''}
-                  onChange={async e => { setRolEdit(p => ({ ...p, [m.id]: e.target.value })); await cambiarRol(m.id, e.target.value) }}
-                  className="input-gold"
-                  style={{ padding: '4px 8px', width: 'auto', fontSize: 11 }}
-                >
-                  <option value="">Sin rol</option>
-                  {ROLES_E.map(r => <option key={r} value={r}>{ROL_LABEL[r]}</option>)}
-                </select>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <button 
+                    onClick={() => resetPassword(m.id)}
+                    className="btn-secondary"
+                    style={{ padding: '4px 8px', fontSize: 11 }}
+                    title="Generar nueva contraseña temporal"
+                  >
+                    Resetear Clave
+                  </button>
+                  <select
+                    value={rolEdit[m.id] ?? m.rolEjercito ?? ''}
+                    onChange={async e => { setRolEdit(p => ({ ...p, [m.id]: e.target.value })); await cambiarRol(m.id, e.target.value) }}
+                    className="input-gold"
+                    style={{ padding: '4px 8px', width: 'auto', fontSize: 11 }}
+                  >
+                    <option value="">Sin rol</option>
+                    {ROLES_E.map(r => <option key={r} value={r}>{ROL_LABEL[r]}</option>)}
+                  </select>
+                </div>
               </div>
             ))}
             {ejercito.miembros.length === 0 && <p style={muted}>No hay miembros con rol asignado aún.</p>}
@@ -183,7 +207,7 @@ export default function ComandanteDashboardClient({ username, ejercito, rankingA
 
       {/* Incidencias */}
       {tab === 'incidencias' && (
-        <ComandanteIncidencias ejercitoId={ejercito.id} />
+        <ComandanteIncidencias ejercitoId={ejercito.id} currentUserId={userId} />
       )}
     </div>
   )

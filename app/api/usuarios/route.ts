@@ -13,7 +13,7 @@ export async function GET() {
     const usuarios = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
-        id: true, username: true, email: true, role: true,
+        id: true, username: true, role: true,
         departamento: true, rolEjercito: true, createdAt: true,
         ejercito: { select: { id: true, sigla: true, nombre: true } },
         invitadoPor: { select: { id: true, username: true } },
@@ -49,5 +49,23 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(usuario)
   } catch {
     return NextResponse.json({ error: 'Error al actualizar usuario' }, { status: 500 })
+  }
+}
+
+// DELETE /api/usuarios?userId=...
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    }
+
+    const userId = req.nextUrl.searchParams.get('userId')
+    if (!userId) return NextResponse.json({ error: 'userId requerido' }, { status: 400 })
+
+    await prisma.user.delete({ where: { id: userId } })
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Error al eliminar usuario. Puede que tenga datos vinculados que lo impiden.' }, { status: 500 })
   }
 }

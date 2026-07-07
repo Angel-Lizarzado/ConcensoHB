@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import IncidenciaChat from '../../components/IncidenciaChat'
 
 interface Incidencia {
   id: string
@@ -14,7 +15,7 @@ interface Incidencia {
   ejercitoDenunciado: { nombre: string; sigla: string }
 }
 
-export default function ComandanteIncidencias({ ejercitoId }: { ejercitoId: string }) {
+export default function ComandanteIncidencias({ ejercitoId, currentUserId }: { ejercitoId: string, currentUserId: string }) {
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -207,6 +208,15 @@ export default function ComandanteIncidencias({ ejercitoId }: { ejercitoId: stri
               )}
             </div>
 
+            <IncidenciaChat 
+              incidenciaId={incidenciaDetails.id}
+              comentarios={incidenciaDetails.comentarios || []}
+              estado={incidenciaDetails.estado}
+              onCommentAdded={() => handleView(viewId)}
+              currentUserId={currentUserId}
+              ejercitoDenuncianteId={incidenciaDetails.ejercitoDenuncianteId}
+              ejercitoDenunciadoId={incidenciaDetails.ejercitoDenunciadoId}
+            />
           </div>
         )}
       </div>

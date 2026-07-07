@@ -8,37 +8,12 @@ import LogoCGE from '@/components/ui/LogoCGE'
 
 type Paso = 'formulario' | 'exito'
 
-export default function RegistroPage() {
-  const router   = useRouter()
-  const [paso, setPaso]       = useState<Paso>('formulario')
-  const [form, setForm]       = useState({ username: '', password: '', confirmar: '', codigo: '' })
+export default function RegistroEjercitoPage() {
+  const router = useRouter()
+  const [paso, setPaso] = useState<Paso>('formulario')
+  const [form, setForm] = useState({ username: '', password: '', confirmar: '', nombreEjercito: '', sigla: '' })
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState<string | null>(null)
-  const [codigoInfo, setCodigoInfo] = useState<string | null>(null)
-
-  // Validar código en tiempo real (debounce manual)
-  const validarCodigo = async (val: string) => {
-    if (val.length < 4) { setCodigoInfo(null); return }
-    // Solo una indicación visual — la validación real la hace la API
-    setCodigoInfo('Verificando…')
-    try {
-      const res = await fetch('/api/registro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '_check_', password: '00000000', codigo: val }),
-      })
-      const data = await res.json()
-      if (data.error?.includes('código')) {
-        setCodigoInfo(`❌ ${data.error}`)
-      } else if (data.error?.includes('usuario')) {
-        setCodigoInfo('✅ Código válido')
-      } else {
-        setCodigoInfo(null)
-      }
-    } catch {
-      setCodigoInfo(null)
-    }
-  }
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,16 +27,21 @@ export default function RegistroPage() {
       setError('La contraseña debe tener al menos 8 caracteres')
       return
     }
+    if (form.sigla.length > 5) {
+      setError('La sigla no puede exceder 5 caracteres')
+      return
+    }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/registro', {
+      const res = await fetch('/api/registro/ejercito', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: form.username.trim(),
           password: form.password,
-          codigo:   form.codigo.trim().toUpperCase() || undefined,
+          nombreEjercito: form.nombreEjercito.trim(),
+          sigla: form.sigla.trim().toUpperCase(),
         }),
       })
 
@@ -77,9 +57,9 @@ export default function RegistroPage() {
 
       if (loginResult?.ok) {
         setPaso('exito')
-        setTimeout(() => router.push('/dashboard'), 2000)
+        setTimeout(() => router.push('/dashboard'), 3000)
       } else {
-        setPaso('exito') // registro OK, login falló — mostrar éxito igual
+        setPaso('exito')
       }
     } catch {
       setError('Error de conexión. Intentá de nuevo.')
@@ -98,9 +78,12 @@ export default function RegistroPage() {
           <div style={{ textAlign: 'center' }}>
             <LogoCGE size={56} />
             <div style={{ fontSize: '2rem', margin: 'var(--space-5) 0 var(--space-3)' }}>✅</div>
-            <h1 style={titleStyle}>¡Bienvenido!</h1>
+            <h1 style={titleStyle}>¡Solicitud Enviada!</h1>
+            <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', lineHeight: 1.6, marginTop: 'var(--space-4)' }}>
+              Tu ejército ha sido registrado y está pendiente de aprobación por el Concilio General. 
+            </p>
             <p style={{ fontFamily: 'var(--font-body)', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: 'var(--space-3)' }}>
-              Tu cuenta fue creada. Redirigiendo al panel…
+              Redirigiendo al panel…
             </p>
           </div>
         </div>
@@ -111,40 +94,26 @@ export default function RegistroPage() {
   return (
     <div style={centerWrap}>
       <div style={card}>
-        {/* Logo + título */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 'var(--space-8)' }}>
           <LogoCGE size={52} />
-          <h1 style={{ ...titleStyle, marginTop: 'var(--space-4)' }}>Crear Cuenta</h1>
-          <p style={subtitle}>Concilio General de Ejércitos</p>
+          <h1 style={{ ...titleStyle, marginTop: 'var(--space-4)' }}>Fundar Ejército</h1>
+          <p style={subtitle}>Registra un nuevo ejército en el CGE</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
 
-          {/* Código de invitación */}
-          <div style={{ background: 'var(--color-gold-highlight)', border: '1px solid var(--color-border-gold)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)' }}>
-            <label style={labelStyle} htmlFor="codigo">
-              Código de invitación
-            </label>
-            <input
-              id="codigo"
-              type="text"
-              value={form.codigo}
-              onChange={e => { f('codigo')(e); validarCodigo(e.target.value) }}
-              placeholder="CGE-XXX-XXXX (opcional si el registro está abierto)"
-              className="input-gold"
-              style={{ marginTop: 'var(--space-2)', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-              autoComplete="off"
-            />
-            {codigoInfo && (
-              <p style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)', color: codigoInfo.startsWith('✅') ? '#4a8a3a' : 'var(--color-onair)' }}>
-                {codigoInfo}
-              </p>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-4)', border: '1px dashed var(--color-border-gold)', borderRadius: 'var(--radius-md)' }}>
+            <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-gold)' }}>Datos del Ejército</h3>
+            <Field id="nombreEjercito" label="Nombre Completo" type="text" value={form.nombreEjercito} onChange={f('nombreEjercito')} placeholder="Nombre completo de la institución" />
+            <Field id="sigla" label="Sigla Oficial" type="text" value={form.sigla} onChange={f('sigla')} placeholder="Siglas (Máx 5 letras)" />
           </div>
 
-          <Field id="username" label="Nombre de usuario" type="text"     value={form.username}  onChange={f('username')}  placeholder="Tu alias en Habbo" autoComplete="username" />
-          <Field id="password" label="Contraseña"         type="password" value={form.password}  onChange={f('password')}  placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
-          <Field id="confirmar" label="Confirmar contraseña" type="password" value={form.confirmar} onChange={f('confirmar')} placeholder="Repetí tu contraseña"  autoComplete="new-password" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-surface-offset)', borderRadius: 'var(--radius-md)' }}>
+            <h3 style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text)' }}>Datos del Fundador</h3>
+            <Field id="username" label="Nombre de usuario" type="text"     value={form.username}  onChange={f('username')}  placeholder="Tu alias en Habbo" autoComplete="username" />
+            <Field id="password" label="Contraseña"         type="password" value={form.password}  onChange={f('password')}  placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
+            <Field id="confirmar" label="Confirmar contraseña" type="password" value={form.confirmar} onChange={f('confirmar')} placeholder="Repetí tu contraseña"  autoComplete="new-password" />
+          </div>
 
           {error && (
             <p role="alert" style={errorStyle}>{error}</p>
@@ -154,25 +123,17 @@ export default function RegistroPage() {
             type="submit"
             className="btn-primary"
             disabled={loading}
-            style={{ width: '100%', opacity: loading ? 0.6 : 1 }}
+            style={{ width: '100%', opacity: loading ? 0.6 : 1, marginTop: 'var(--space-2)' }}
           >
-            {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            {loading ? 'Enviando solicitud…' : 'Enviar Solicitud al Concilio'}
           </button>
 
-          <div style={{ textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <p>
-              ¿Ya tenés cuenta?{' '}
-              <Link href="/login" style={{ color: 'var(--color-gold)', textDecoration: 'none' }}>
-                Iniciar sesión
-              </Link>
-            </p>
-            <p style={{ marginTop: 'var(--space-2)' }}>
-              ¿Eres dueño de un ejército?{' '}
-              <Link href="/registro/ejercito" style={{ color: 'var(--color-gold)', textDecoration: 'none', borderBottom: '1px solid var(--color-gold)' }}>
-                Registra tu Ejército aquí
-              </Link>
-            </p>
-          </div>
+          <p style={{ textAlign: 'center', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)' }}>
+            ¿Eres miembro de un ejército ya creado?{' '}
+            <Link href="/registro" style={{ color: 'var(--color-gold)', textDecoration: 'none' }}>
+              Usa tu código aquí
+            </Link>
+          </p>
         </form>
       </div>
     </div>
@@ -189,7 +150,7 @@ function Field({ id, label, type, value, onChange, placeholder, autoComplete }: 
       <label htmlFor={id} style={labelStyle}>{label}</label>
       <input id={id} type={type} value={value} onChange={onChange}
         placeholder={placeholder} autoComplete={autoComplete}
-        required className="input-gold" />
+        required className="input-gold" style={{ textTransform: id === 'sigla' ? 'uppercase' : 'none' }} />
     </div>
   )
 }

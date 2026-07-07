@@ -13,7 +13,7 @@ export default async function ComandanteDashboard() {
     ? await prisma.ejercito.findUnique({
         where: { id: session.user.ejercitoId },
         include: {
-          miembros: { select: { id: true, username: true, rolEjercito: true, email: true } },
+          miembros: { select: { id: true, username: true, rolEjercito: true } },
           actividades: { orderBy: { createdAt: 'desc' }, take: 10, select: { id: true, descripcion: true, puntos: true, createdAt: true } },
           _count: { select: { miembros: true } },
         },
@@ -27,6 +27,7 @@ export default async function ComandanteDashboard() {
 
   return (
     <ComandanteDashboardClient
+      userId={session.user.id}
       username={session.user.username}
       ejercito={ejercito as any}
       rankingActual={ranking}

@@ -15,26 +15,38 @@ async function main() {
   }
 
   const adminUsername = process.env.SEED_ADMIN_USERNAME ?? 'Mitsukai'
-  const adminEmail    = process.env.SEED_ADMIN_EMAIL    ?? 'admin@cge.com'
 
   console.log('🌱 Iniciando seed...\n')
 
   // =============================================
-  // Usuario ADMIN inicial
+  // Usuarios iniciales
   // =============================================
-  const hashedPassword = await bcrypt.hash(adminPassword, 12)
+  const initialUsers = [
+    { username: 'Hyungzero', password: 'Hyungzero', role: 'ADMIN' },
+    { username: 'Peco115', password: 'Peco115', role: 'ADMIN' },
+    { username: 'Mitsukai', password: 'Mitsukai', role: 'ADMIN' },
+    { username: 'Rhea.', password: 'Rhea.', role: 'ADMIN' },
+    { username: 'juez1', password: '123456', role: 'JUEZ' },
+    { username: 'reportero1', password: '123456', role: 'REPORTERO' },
+    { username: 'comandante1', password: '123456', role: 'COMANDANTE' },
+  ]
 
-  const admin = await prisma.user.upsert({
-    where:  { email: adminEmail },
-    update: {},
-    create: {
-      username: adminUsername,
-      email:    adminEmail,
-      password: hashedPassword,
-      role:     'ADMIN',
-    },
-  })
-  console.log(`✅ Admin creado: ${admin.username} (${admin.email})`)
+  let admin = null
+
+  for (const u of initialUsers) {
+    const hashed = await bcrypt.hash(u.password, 12)
+    const created = await prisma.user.upsert({
+      where: { username: u.username },
+      update: { password: hashed, role: u.role as any },
+      create: {
+        username: u.username,
+        password: hashed,
+        role: u.role as any,
+      },
+    })
+    console.log(`✅ Usuario creado: ${created.username} (${created.role})`)
+    if (u.username === 'Mitsukai') admin = created
+  }
 
   // =============================================
   // Ejércitos iniciales
@@ -50,9 +62,17 @@ async function main() {
     const ejercito = await prisma.ejercito.upsert({
       where:  { sigla: data.sigla },
       update: {},
-      create: data,
+      create: { ...data, activo: true },
     })
     console.log(`✅ Ejército: ${ejercito.sigla} — ${ejercito.nombre}`)
+
+    if (data.sigla === 'F.A.M') {
+      await prisma.user.update({
+        where: { username: 'comandante1' },
+        data: { ejercitoId: ejercito.id, rolEjercito: 'COMANDANTE' }
+      })
+      console.log('✅ Comandante1 enlazado a F.A.M')
+    }
   }
 
   // =============================================
@@ -114,7 +134,7 @@ async function main() {
         descripcion:     data.descripcion,
         privado:         data.privado ?? false,
         rolesPermitidos: (data as any).rolesPermitidos ?? [],
-        creadoPor:       admin.id,
+        creadoPor:       admin?.id ?? 'system',
       },
     })
     console.log(`✅ Canal: #${canal.nombre}`)

@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, sigla: true, nombre: true, descripcion: true,
         escudo: true, banner: true, activo: true, puntos: true, ranking: true,
+        fundador: true,
         createdAt: true,
         _count: { select: { miembros: true } },
       },

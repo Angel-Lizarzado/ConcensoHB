@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import IncidenciaChat from '../../components/IncidenciaChat'
 
 interface Incidencia {
   id: string; titulo: string; descripcion: string; estado: string; createdAt: string
@@ -13,6 +14,7 @@ interface Incidencia {
   fechaJuicio: string | null
   _count: { pruebas: number; comentariosInternos: number }
   pruebas?: any[]
+  comentarios?: any[]
   resolucion?: string
 }
 
@@ -264,6 +266,16 @@ export default function AdminIncidencias() {
               </div>
 
             </div>
+
+            <IncidenciaChat 
+              incidenciaId={details.id}
+              comentarios={details.comentarios || []}
+              estado={details.estado}
+              onCommentAdded={() => loadDetails(viewId)}
+              currentUserId={userId!}
+              ejercitoDenuncianteId={details.ejercitoDenuncianteId}
+              ejercitoDenunciadoId={details.ejercitoDenunciadoId}
+            />
 
             {/* Dictar Veredicto */}
             {details.estado === 'RESUELTA' || details.estado === 'DESESTIMADA' ? (

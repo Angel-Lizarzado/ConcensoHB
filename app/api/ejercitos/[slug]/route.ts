@@ -47,3 +47,34 @@ export async function PATCH(
     return NextResponse.json({ error: 'Error al actualizar ejército' }, { status: 500 })
   }
 }
+
+// DELETE /api/ejercitos/[slug] — Eliminar (Solo ADMIN)
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const session = await auth()
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { slug } = await params
+    const ejercitos = await prisma.ejercito.findMany({ select: { id: true, sigla: true } })
+    const ejercito  = ejercitos.find(e => siglaToSlug(e.sigla) === slug)
+    
+    if (!ejercito) return NextResponse.json({ error: 'Ejército no encontrado' }, { status: 404 })
+
+    // Para evitar errores de integridad con los usuarios vinculados a este ejército
+    // Primero, si esto es para rechazar solicitudes, eliminamos también a los usuarios de este ejército
+    await prisma.$transaction([
+      prisma.user.deleteMany({ where: { ejercitoId: ejercito.id } }),
+      prisma.ejercito.delete({ where: { id: ejercito.id } })
+    ])
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Error al eliminar ejército:', error)
+    return NextResponse.json({ error: 'Error al eliminar ejército' }, { status: 500 })
+  }
+}

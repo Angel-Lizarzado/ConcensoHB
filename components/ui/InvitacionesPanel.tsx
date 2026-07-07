@@ -6,6 +6,7 @@ interface Codigo {
   id: string; codigo: string; usosActuales: number; usoMaximo: number
   activo: boolean; expiresAt: string | null; createdAt: string
   ejercito: { sigla: string; nombre: string } | null
+  rolOtorgado: string | null
   _count: { usuarios: number }
 }
 
@@ -22,6 +23,7 @@ export default function InvitacionesPanel({ ejercitoId, esAdmin = false }: Invit
   const [creating, setCreating] = useState(false)
   const [msg, setMsg]           = useState<string | null>(null)
   const [copied, setCopied]     = useState<string | null>(null)
+  const [rol, setRol]           = useState<string>('')
 
   const load = () => {
     setLoading(true)
@@ -36,7 +38,10 @@ export default function InvitacionesPanel({ ejercitoId, esAdmin = false }: Invit
     const res = await fetch('/api/invitaciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ejercitoId: ejercitoId ?? undefined }),
+      body: JSON.stringify({ 
+        ejercitoId: ejercitoId ?? undefined,
+        rolOtorgado: rol === '' ? undefined : rol
+      }),
     })
     const data = await res.json()
     if (res.ok) { setMsg(`Código creado: ${data.codigo}`); load() }
@@ -53,6 +58,23 @@ export default function InvitacionesPanel({ ejercitoId, esAdmin = false }: Invit
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+        {esAdmin && (
+          <select
+            value={rol}
+            onChange={(e) => setRol(e.target.value)}
+            style={{
+              padding: 'var(--space-2) var(--space-4)',
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              color: 'var(--color-text)', borderRadius: 'var(--radius-md)',
+              fontFamily: 'var(--font-ui)', fontSize: 'var(--text-sm)',
+            }}
+          >
+            <option value="">Otorgar: Visitante (Por defecto)</option>
+            <option value="JUEZ">Otorgar: Juez</option>
+            <option value="REPORTERO">Otorgar: Reportero</option>
+            <option value="ADMIN">Otorgar: Administrador</option>
+          </select>
+        )}
         <button onClick={crear} className="btn-primary" disabled={creating} style={{ opacity: creating ? 0.6 : 1 }}>
           {creating ? 'Generando…' : '+ Generar código'}
         </button>
@@ -88,7 +110,8 @@ export default function InvitacionesPanel({ ejercitoId, esAdmin = false }: Invit
               <div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text)' }}>
                   {c.usosActuales} / {c.usoMaximo} usos
-                  {c.ejercito && <span style={{ color: 'var(--color-text-faint)', marginLeft: 'var(--space-3)' }}>· {c.ejercito.sigla}</span>}
+                  {c.ejercito && <span style={{ color: 'var(--color-text-faint)', marginLeft: 'var(--space-3)' }}>· Ejército: {c.ejercito.sigla}</span>}
+                  {c.rolOtorgado && <span style={{ color: 'var(--color-gold)', marginLeft: 'var(--space-3)' }}>· Otorga: {c.rolOtorgado}</span>}
                 </div>
                 <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', color: 'var(--color-text-faint)', marginTop: 2 }}>
                   Creado {new Date(c.createdAt).toLocaleDateString('es')}

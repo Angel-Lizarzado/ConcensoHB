@@ -41,6 +41,7 @@ const NAV_ITEMS = [
     label: 'Concilio',
     children: [
       { label: 'Mediación', href: '/mediacion', desc: 'Solicitar intervención neutral' },
+      { label: 'Equipo',    href: '/equipo',    desc: 'Conocé al personal y su misión' },
     ],
   },
 ]
@@ -71,7 +72,12 @@ function Dropdown({ label, items, isActive }: { label: string; items: DropdownIt
   }, [])
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div 
+      ref={ref} 
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -96,18 +102,17 @@ function Dropdown({ label, items, isActive }: { label: string; items: DropdownIt
       </button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute', top: 'calc(100% + 8px)', left: 0,
-            minWidth: 220, zIndex: 200,
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border-gold)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)',
-            overflow: 'hidden',
-            animation: 'dropdown-in 0.12s ease-out',
-          }}
-        >
+        <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: 220, zIndex: 200, paddingTop: 8 }}>
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border-gold)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-lg)',
+              overflow: 'hidden',
+              animation: 'dropdown-in 0.12s ease-out',
+            }}
+          >
           {items.map((item, i) => (
             <Link
               key={item.href}
@@ -140,6 +145,7 @@ function Dropdown({ label, items, isActive }: { label: string; items: DropdownIt
               </div>
             </Link>
           ))}
+          </div>
         </div>
       )}
     </div>
@@ -162,7 +168,12 @@ function UserMenu({ username }: { username: string }) {
   }, [])
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div 
+      ref={ref} 
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         onClick={() => setOpen(o => !o)}
         style={{
@@ -202,15 +213,14 @@ function UserMenu({ username }: { username: string }) {
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-          minWidth: 200, zIndex: 200,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border-gold)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-lg)',
-          overflow: 'hidden',
-        }}>
+        <div style={{ position: 'absolute', top: '100%', right: 0, minWidth: 200, zIndex: 200, paddingTop: 8 }}>
+          <div style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border-gold)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-lg)',
+            overflow: 'hidden',
+          }}>
           <div style={{ padding: 'var(--space-4) var(--space-5)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-offset)' }}>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-text)' }}>{username}</div>
             <div style={{ fontFamily: 'var(--font-ui)', fontSize: 10, color: 'var(--color-text-faint)', marginTop: 2 }}>Habbo · CGE</div>
@@ -248,6 +258,7 @@ function UserMenu({ username }: { username: string }) {
           >
             Cerrar sesión
           </button>
+          </div>
         </div>
       )}
     </div>
