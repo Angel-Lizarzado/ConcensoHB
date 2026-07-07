@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         juez: { select: { username: true } },
         // Traer pruebas, y hacer un join manual del ejercito del subidor
         pruebas: { orderBy: { createdAt: 'asc' } },
-        comentarios: { orderBy: { createdAt: 'asc' }, include: { autor: { select: { id: true, username: true, role: true, ejercitoId: true } } } }
+        comentariosInternos: { orderBy: { createdAt: 'asc' }, include: { autor: { select: { id: true, username: true, role: true, ejercitoId: true } } } }
       }
     })
 

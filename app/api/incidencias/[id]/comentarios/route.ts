@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       if (incidencia.ejercitoDenuncianteId !== ejercitoId && incidencia.ejercitoDenunciadoId !== ejercitoId) {
         return NextResponse.json({ error: 'No participas en este caso' }, { status: 403 })
       }
-    } else if (role === 'JUEZ' && incidencia.juezAsignadoId !== session.user.id) {
+    } else if (role === 'JUEZ' && incidencia.juezId !== session.user.id) {
       return NextResponse.json({ error: 'Solo el juez asignado puede comentar' }, { status: 403 })
     }
 
